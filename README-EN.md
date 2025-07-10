@@ -16,7 +16,7 @@ This script is a DDNS script based on the cloudflare API, which supports IPV4 an
 ### Instructions
 Open a terminal window and execute the following procedure:
 ```shell
-wget https://raw.githubusercontent.com/wherelse/cloudflare-ddns-script/master/cloudflare-ddns.sh
+wget https://raw.githubusercontent.com/marchfun1/cloudflare-ddns/master/cloudflare-ddns.sh
 sudo chmod +x /home/username/cloudflare-ddns.sh #Directory changes based on actual users, you should change the username.
 ```
 The personal configuration information in the script needs to be changed, and the directory is consistent with the previous command
@@ -27,8 +27,7 @@ sudo vi /home/username/cloudflare-ddns.sh
 ```
 Find the following to make changes
 ```shell
-auth_email="xxxxxxx@xxxx.com"  #Your CloudFlare account email
-auth_key="*****************"   #Yout cloudflare account Globel ID 
+api_token="*****************"   #Your cloudflare account API Token 
 zone_name="Your main Domain"   #Your zone domain name
 record_name="Your Full Domain" #Your full record name 
 
