@@ -1,104 +1,92 @@
 #!/bin/bash
 
-# CHANGE THESE
-auth_email="xxxxxxx@xxxx.com"  #你的CloudFlare注册账户邮箱,your cloudflare account email address
-auth_key="*****************"   #你的cloudflare账户Globel ID ,your cloudflare Globel ID
-zone_name="Your main Domain"   #你的域名,your root domain address
-record_name="Your Full Domain" #完整域名,your full domain address
-record_type="AAAA"             #A or AAAA,ipv4 或 ipv6解析
+# 🧩 使用者設定
+api_token="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # 你的 API Token
+zone_name="Your main Domain"           		   # 根域名
+record_name="Your full Domain"                 # 完整子域名
+record_type="A"                                # A (IPv4) 或 AAAA (IPv6) 紀錄
+proxied=false
 
-ip_index="local"            #use "internet" or "local",使用本地方式还是网络方式获取地址
-eth_card="eth0"             #使用本地方式获取ip绑定的网卡，默认为eth0，仅本地方式有效,the default ethernet card is eth0
+ip_index="internet"                       # local 或 internet 使用本地方式還是網路方式取得位址
+eth_card="eth0"                           # 使用本地取得方式時繫結的網卡，使用網路方式可不變更
 
-ip_file="ip.txt"            #保存地址信息,save ip information in the ip.txt
+# 📁 檔案設定
+ip_file="ip.txt"
 id_file="cloudflare.ids"
 log_file="cloudflare.log"
 
-
-if [ $record_type = "AAAA" ];then
-    if [ $ip_index = "internet" ];then
-        ip=$(curl -6 ip.sb)
-    elif [ $ip_index = "local" ];then
-        if [ "$user" = "root" ];then
-            ip=$(ifconfig $eth_card | grep 'inet6' | cut -f2 | awk '{ print $2}' |  grep -v '^::1$' | grep -v '^fe80' | grep -v '^f[d|c]' | head -1)
-        else
-            ip=$(/sbin/ifconfig $eth_card | grep 'inet6' | cut -f2 | awk '{ print $2}' |  grep -v '^::1$' | grep -v '^fe80' | grep -v '^f[d|c]' | head -1)
-        fi
-    else 
-        echo "Error IP index, please input the right type"
-        exit 0
-    fi
-elif [ $record_type = "A" ];then
-    if [ $ip_index = "internet" ];then
-        ip=$(curl -4 ip.sb)
-    elif [ $ip_index = "local" ];then
-        if [ "$user" = "root" ];then
-            ip=$(ifconfig $eth_card | grep 'inet'| grep -v '127.0.0.1' | grep -v 'inet6'|cut -f2 | awk '{ print $2}')
-        else
-            ip=$(/sbin/ifconfig $eth_card | grep 'inet'| grep -v '127.0.0.1' | grep -v 'inet6'|cut -f2 | awk '{ print $2}')
-        fi
-    else 
-        echo "Error IP index, please input the right type"
-        exit 0
-    fi
-else
-    echo "Error DNS type"
-    exit 0
-fi
-
-# 日志 log file
+# 📜 紀錄函式
 log() {
-    if [ "$1" ]; then
-        echo -e "[$(date)] - $1" >> $log_file
+    echo -e "[$(date)] $1" >> "$log_file"
+}
+
+# 🌐 擷取 IP
+fetch_ip() {
+    if [ "$record_type" = "AAAA" ]; then
+        [ "$ip_index" = "internet" ] && ip=$(curl -6 -s ip.sb)
+        [ "$ip_index" = "local" ] && ip=$(ip -6 addr show "$eth_card" | grep 'inet6' | awk '{print $2}' | grep -v 'fe80' | grep -v '^::1' | cut -d/ -f1 | head -1)
+    elif [ "$record_type" = "A" ]; then
+        [ "$ip_index" = "internet" ] && ip=$(curl -4 -s ip.sb)
+        [ "$ip_index" = "local" ] && ip=$(ip -4 addr show "$eth_card" | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 | head -1)
+    else
+        log "❌ 不支援的 DNS 類型：$record_type"
+        exit 1
+    fi
+
+    if [ -z "$ip" ]; then
+        log "❌ 無法擷取 IP，請確認網卡設定：$eth_card"
+        exit 1
     fi
 }
 
-# SCRIPT START
-log "Check Initiated"
-
-#判断ip是否发生变化,check the ip had been changed?
-if [ -f $ip_file ]; then
-    old_ip=$(cat $ip_file)
-    if [ $ip == $old_ip ]; then
-        echo "IP has not changed."
-        exit 0
-    fi
-fi
-
-#获取域名和授权 get the domain and authentic
-if [ -f $id_file ] && [ $(wc -l $id_file | cut -d " " -f 1) == 2 ]; then
-    zone_identifier=$(head -1 $id_file)
-    record_identifier=$(tail -1 $id_file)
-else
+# 🔍 自動查詢 zone_id 和 record_id
+get_ids() {
     zone_identifier=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$zone_name" \
-        -H "X-Auth-Email: $auth_email" \
-        -H "X-Auth-Key: $auth_key" \
-        -H "Content-Type: application/json" | grep -Po '(?<="id":")[^"]*' | head -1 )
-    record_identifier=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records?type=${record_type}&name=$record_name" \
-        -H "X-Auth-Email: $auth_email" \
-        -H "X-Auth-Key: $auth_key" \
-        -H "Content-Type: application/json"  | grep -Po '(?<="id":")[^"]*')
-    echo "$zone_identifier" > $id_file
-    echo "$record_identifier" >> $id_file
+        -H "Authorization: Bearer $api_token" \
+        -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+    if [ -z "$zone_identifier" ]; then
+        log "❌ 無法取得 zone ID，請檢查 zone_name 是否存在：$zone_name"
+        exit 1
+    fi
+
+    record_identifier=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records?type=$record_type&name=$record_name" \
+        -H "Authorization: Bearer $api_token" \
+        -H "Content-Type: application/json" | jq -r '.result[0].id')
+
+    if [ -z "$record_identifier" ]; then
+        log "❌ 無法取得 DNS 記錄 ID，請確認 record_name 是否存在：$record_name"
+        exit 1
+    fi
+}
+
+# 📎 檢查是否需要更新
+log "🔍 開始檢查 IP 是否有變動"
+fetch_ip
+
+if [ -f "$ip_file" ] && [ "$ip" = "$(cat $ip_file)" ]; then
+    log "📌 IP 無變化：$ip，不需更新"
+    echo "IP unchanged: $ip"
+    exit 0
 fi
 
-#更新DNS记录 update the dns
-update=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records/$record_identifier" \
-    -H "X-Auth-Email: $auth_email" \
-    -H "X-Auth-Key: $auth_key" \
+# ✨ 查詢 DNS 記錄資訊
+get_ids
+
+# 🚀 執行更新
+response=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records/$record_identifier" \
+    -H "Authorization: Bearer $api_token" \
     -H "Content-Type: application/json" \
-    --data "{\"type\":\"$record_type\",\"name\":\"$record_name\",\"content\":\"$ip\",\"ttl\":1,\"proxied\":false}")
+    --data "{\"type\":\"$record_type\",\"name\":\"$record_name\",\"content\":\"$ip\",\"ttl\":1,\"proxied\":$proxied}")
 
+success=$(echo "$response" | jq -r '.success')
 
-#反馈更新情况 gave the feedback about the update statues
-if [[ $update == *"\"success\":true"* ]]; then
-    message="IP changed to: $ip"
-    echo "$ip" > $ip_file
-    log "$message"
-    echo "$message"
+if [ "$success" = "true" ]; then
+    echo "$ip" > "$ip_file"
+    log "✅ IP 更新成功：$ip"
+    echo "IP updated: $ip"
 else
-    message="API UPDATE FAILED. DUMPING RESULTS:\n$update"
-    log "$message"
-    echo -e "$message"
+    log "❌ 更新失敗，API 回傳如下：\n$response"
+    echo -e "Update failed:\n$response"
     exit 1
 fi
