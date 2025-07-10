@@ -1,26 +1,25 @@
 #!/bin/bash
 
-# 🧩 使用者設定
+# 使用者設定
 api_token="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # 你的 API Token
 zone_name="Your main Domain"           		   # 根域名
 record_name="Your full Domain"                 # 完整子域名
 record_type="A"                                # A (IPv4) 或 AAAA (IPv6) 紀錄
-proxied=false
-
 ip_index="internet"                       # local 或 internet 使用本地方式還是網路方式取得位址
 eth_card="eth0"                           # 使用本地取得方式時繫結的網卡，使用網路方式可不變更
+proxied=false                             # 不使用代理，設為僅進行 DNS 解析
 
-# 📁 檔案設定
+# 檔案設定
 ip_file="ip.txt"
 id_file="cloudflare.ids"
 log_file="cloudflare.log"
 
-# 📜 紀錄函式
+# 紀錄函式
 log() {
     echo -e "[$(date)] $1" >> "$log_file"
 }
 
-# 🌐 擷取 IP
+# 擷取 IP
 fetch_ip() {
     if [ "$record_type" = "AAAA" ]; then
         [ "$ip_index" = "internet" ] && ip=$(curl -6 -s ip.sb)
@@ -39,7 +38,7 @@ fetch_ip() {
     fi
 }
 
-# 🔍 自動查詢 zone_id 和 record_id
+# 自動查詢 zone_id 和 record_id
 get_ids() {
     zone_identifier=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$zone_name" \
         -H "Authorization: Bearer $api_token" \
@@ -60,7 +59,7 @@ get_ids() {
     fi
 }
 
-# 📎 檢查是否需要更新
+# 檢查是否需要更新
 log "🔍 開始檢查 IP 是否有變動"
 fetch_ip
 
@@ -70,10 +69,10 @@ if [ -f "$ip_file" ] && [ "$ip" = "$(cat $ip_file)" ]; then
     exit 0
 fi
 
-# ✨ 查詢 DNS 記錄資訊
+# 查詢 DNS 記錄資訊
 get_ids
 
-# 🚀 執行更新
+# 執行更新
 response=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records/$record_identifier" \
     -H "Authorization: Bearer $api_token" \
     -H "Content-Type: application/json" \
