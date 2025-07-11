@@ -1,11 +1,10 @@
 # CloudFlare DDNS script/Raspberry pi IPV6 DDNS Solution 
 
-### update[ServerChan version](https://github.com/wherelse/cloudFlare-ddns-script/tree/ServerPush)
-
 English | [中文](/README.md)
 
 ### Overview
-This script is a DDNS script based on the cloudflare API, which supports IPV4 and IPV6. The IP address of the script installation host can be obtained through the network and local methods. Theoretically supports all hosts using the Linux system. It has been tested and available on debian and ubuntu.
+This script is adapted from [https://github.com/wherelse/cloudflare-ddns-script](https://github.com/wherelse/cloudflare-ddns-script). The original project used a Global API Key and is no longer functional.
+This revised version is based on the Cloudflare API Token and serves as a DDNS update script. It supports both IPv4 and IPv6, and can retrieve the IP address of the host either via network-based or local methods. In theory, it is compatible with all Linux-based systems, and has been tested successfully on Debian and Ubuntu.
 
 ### What to do before using a script
 1. A liunx device that can be connected to the Internet.
