@@ -5,7 +5,8 @@
 中文 | [English](/README-EN.md)
 
 ### 概述
-本指令碼是基於 cloudflare API 的 DDNS 指令碼，支援 IPv4 和 IPv6，可透過網路方式和本地方式取得指令碼安裝主機的 IP 位址，理論支援所有使用 linux 系統的主機，已在 debian 和 ubuntu 上測試可用。
+本指令碼修改自 https://github.com/wherelse/cloudflare-ddns-script 原專案使用 Global API Key，並且程式碼已失效。
+本專案修改成基於 cloudflare API Token 的 DDNS 指令碼，支援 IPv4 和 IPv6，可透過網路方式和本地方式取得指令碼安裝主機的 IP 位址，理論支援所有使用 linux 系統的主機，已在 debian 和 ubuntu 上測試可用。
 
 ### 使用指令碼前需要做的
 1. 一台可上網的 liunx 裝置
