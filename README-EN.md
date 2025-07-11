@@ -1,4 +1,4 @@
-# CloudFlare DDNS script/Raspberry pi IPV6 DDNS Solution 
+# CloudFlare DDNS script/Raspberry pi IPv4/IPv6 DDNS Solution 
 
 English | [中文](/README.md)
 
