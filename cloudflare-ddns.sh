@@ -1,91 +1,98 @@
 #!/bin/bash
 
-# 使用者設定
-api_token="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" # 你的 API Token
-zone_name="Your main Domain"           	  # 根域名
-record_name="Your sub Domain"             # 完整子域名
-record_type="A"                           # A (IPv4) 或 AAAA (IPv6) 紀錄
-ip_index="internet"                       # local 或 internet 使用本地方式還是網路方式取得 IP 位址
-eth_card="eth0"                           # 使用本地取得方式時繫結的網卡，使用網路方式時此項設定無效
-proxied=false                             # 不使用代理，設為僅進行 DNS 解析
+# 第一組網域設定
+apitoken1="填入API_TOKEN_1" # 你的 API Token xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+zonename1="example.com"     # 根域名
+recordname1="www"           # 子域名 (主機名) 更新根域名時可留空
+recordtype1="A"             # A (IPv4) 或 AAAA (IPv6) 紀錄
+proxied1="false"            # 不使用代理，設為僅進行 DNS 解析
 
-# 檔案設定 (產生的檔案位置與 cloudflare-ddns.sh 相同)
-ip_file="ip.txt"
-id_file="cloudflare.ids"
-log_file="cloudflare.log"
+# 第二組網域設定（只更新一組網域時可以不設定全部留空）
+apitoken2=""
+zonename2=""
+recordname2=""
+recordtype2="A"
+proxied2="false"
 
-# 紀錄函式
+ipfile="ip.txt"
+logfile="cloudflare-ddns.log"
+
 log() {
-    echo -e "[$(date)] $1" >> "$log_file"
+    echo -e "$(date '+%F %T') $@" >> "$logfile"
 }
 
-# 擷取 IP
 fetch_ip() {
-    if [ "$record_type" = "AAAA" ]; then
-        [ "$ip_index" = "internet" ] && ip=$(curl -6 -s ip.sb)
-        [ "$ip_index" = "local" ] && ip=$(ip -6 addr show "$eth_card" | grep 'inet6' | awk '{print $2}' | grep -v 'fe80' | grep -v '^::1' | cut -d/ -f1 | head -1)
-    elif [ "$record_type" = "A" ]; then
-        [ "$ip_index" = "internet" ] && ip=$(curl -4 -s ip.sb)
-        [ "$ip_index" = "local" ] && ip=$(ip -4 addr show "$eth_card" | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 | head -1)
+    local rt="$1"
+    local ip=""
+    if [[ "$rt" == "AAAA" ]]; then
+        ip=$(curl -6 -s ip.sb)
     else
-        log "❌ Unsupported DNS types: $record_type"
-        exit 1
+        ip=$(curl -4 -s ip.sb)
+    fi
+    echo "$ip"
+}
+
+update_dns() {
+    local apitoken="$1"
+    local zonename="$2"
+    local recordname="$3"
+    local recordtype="$4"
+    local ip="$5"
+    local proxied="$6"
+
+    local zoneid=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${zonename}" \
+      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" | jq -r '.result[0].id')
+    if [[ -z "$zoneid" ]]; then log "[$zonename] 取得 ZoneID 失敗"; return 1; fi
+
+    local rec_name
+    if [[ -z "$recordname" ]]; then
+        rec_name="$zonename"
+    else
+        rec_name="${recordname}.${zonename}"
     fi
 
-    if [ -z "$ip" ]; then
-        log "❌ Unable to retrieve IP, please confirm the network card settings: $eth_card"
-        exit 1
+    local recid=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records?type=${recordtype}&name=${rec_name}" \
+      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" | jq -r '.result[0].id')
+    if [[ -z "$recid" ]]; then log "[$zonename] 取得紀錄 ID 失敗"; return 1; fi
+
+    local update_json="{\"type\":\"${recordtype}\",\"name\":\"${rec_name}\",\"content\":\"${ip}\",\"ttl\":1,\"proxied\":${proxied}}"
+    local resp=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records/${recid}" \
+      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" --data "$update_json")
+    local success=$(echo $resp | jq -r '.success')
+    if [[ "$success" == "true" ]]; then
+        log "[$zonename] IP 更新成功: $ip"
+    else
+        log "[$zonename] IP 更新失敗: $resp"
     fi
 }
 
-# 自動查詢 zone_id 和 record_id
-get_ids() {
-    zone_identifier=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$zone_name" \
-        -H "Authorization: Bearer $api_token" \
-        -H "Content-Type: application/json" | jq -r '.result[0].id')
+# ---- 取得最新外部 IP ----
+ip1=$(fetch_ip "$recordtype1")
+if [[ -z "$ip1" ]]; then 
+    log "取得 IP 失敗"
+    exit 1
+fi
 
-    if [ -z "$zone_identifier" ]; then
-        log "❌ Unable to obtain zone ID, please check whether zone_name exists: $zone_name"
-        exit 1
-    fi
+# 檢查IP是否變動
+if [[ -f "$ipfile" ]]; then
+    oldip=$(cat "$ipfile")
+else
+    oldip=""
+fi
 
-    record_identifier=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records?type=$record_type&name=$record_name" \
-        -H "Authorization: Bearer $api_token" \
-        -H "Content-Type: application/json" | jq -r '.result[0].id')
-
-    if [ -z "$record_identifier" ]; then
-        log "❌ Unable to obtain DNS record ID, please confirm whether record_name exists: $record_name"
-        exit 1
-    fi
-}
-
-# 檢查是否需要更新
-log "🔍 Start checking if the IP has changed"
-fetch_ip
-
-if [ -f "$ip_file" ] && [ "$ip" = "$(cat $ip_file)" ]; then
-    log "📌 IP unchanged: $ip, no need to update"
-    echo "IP unchanged: $ip"
+if [[ "$ip1" == "$oldip" ]]; then
+    log "IP 未變更: $ip1"
     exit 0
 fi
 
-# 查詢 DNS 記錄資訊
-get_ids
-
-# 執行更新
-response=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records/$record_identifier" \
-    -H "Authorization: Bearer $api_token" \
-    -H "Content-Type: application/json" \
-    --data "{\"type\":\"$record_type\",\"name\":\"$record_name\",\"content\":\"$ip\",\"ttl\":1,\"proxied\":$proxied}")
-
-success=$(echo "$response" | jq -r '.success')
-
-if [ "$success" = "true" ]; then
-    echo "$ip" > "$ip_file"
-    log "✅ IP update successful: $ip"
-    echo "IP updated: $ip"
-else
-    log "❌ The update failed, and the API response is as follows: \n$response"
-    echo -e "Update failed:\n$response"
-    exit 1
+# ---- 執行第一組 ----
+if [[ -n "$zonename1" && -n "$apitoken1" ]]; then
+    update_dns "$apitoken1" "$zonename1" "$recordname1" "$recordtype1" "$ip1" "$proxied1"
 fi
+
+# ---- 執行第二組（只有參數設定才執行） ----
+if [[ -n "$zonename2" && -n "$recordname2" && -n "$apitoken2" ]]; then
+    update_dns "$apitoken2" "$zonename2" "$recordname2" "$recordtype2" "$ip1" "$proxied2"
+fi
+
+echo "$ip1" > "$ipfile"
