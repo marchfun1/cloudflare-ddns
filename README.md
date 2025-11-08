@@ -11,7 +11,7 @@
 ### 使用指令碼前需要做的
 1. 一台可上網的 liunx 裝置
 2. 擁有一個域名，免費的或者收費的都可以
-3. 註冊一個 CloudFlare 帳號 ( www.cloudflare.com )，並將需要使用的域名新增到帳號上，完成設定後根據需要加入服務裝置的 IPv6 位址加入一個 AAAA 解析，並設為僅進行 DNS 解析
+3. 註冊一個 CloudFlare 帳號 ( www.cloudflare.com )，並將需要使用的域名新增到帳號上，完成設定後根據需要加入服務裝置的 A 或 AAAA 紀錄，並設為僅進行 DNS 解析
 4. 在 CloudFlare 帳號中建立 API Token (權杖) 並記錄下來，用於後續設定
 
 ### 使用方法
