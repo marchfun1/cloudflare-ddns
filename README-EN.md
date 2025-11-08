@@ -24,19 +24,27 @@ sudo nano /home/username/cloudflare-ddns.sh
 #or
 sudo vi /home/username/cloudflare-ddns.sh
 ```
-Find the following to make changes
-```shell
-api_token="*****************"   #Your cloudflare account API Token 
-zone_name="Your main Domain"   #Your zone domain name
-record_name="Your Full Domain" #Your full record name 
+This program is capable of simultaneously updating two domains. If you only wish to update one domain, please leave the second set of domain settings empty.
 
-ip_index="local"   #Domain acquisition method, local or network         
-#use "internet" or "local",Use local or network to obtain the address
-eth_card="eth0"    
-#The network card bound when using the local acquisition method, the network method can be used without change.         
-#Get the network card bound by ip in local mode, default is eth0, only local mode is effective
+Find and modify the content below:
+
+```shell
+
+# First Domain Settings
+apitoken1="Enter_API_TOKEN_1" # Your API Token xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+zonename1="example.com"       # Root domain
+recordname1="www"             # Subdomain (hostname). Can be left empty when updating the root domain.
+recordtype1="A"               # A (IPv4) or AAAA (IPv6) record
+proxied1="false"              # Do not use proxy; set to DNS resolution only
+
+# Second Domain Settings (Can be left completely empty if only updating one domain)
+apitoken2=""
+zonename2=""
+recordname2=""
+recordtype2="A"
+proxied2="false"
 ```
-Take any domain name as an example, the domain name ipv6.google.com, the zone_name is `google.com` and the record_name is` ipv6.google.com`. After modification, save and exit.
+Taking any domain as an example, for the domain www.google.com, zonename1 would be google.com and recordname1 would be www. After making the modifications, save and exit.
 
 Enter the following at the terminal to run the script:
 ```shell
@@ -51,9 +59,3 @@ Enter the `crontab -e` at the terminal,Add the following at the end of the file:
 */5 * * * *  /home/username/cloudflare-ddns.sh >/dev/null 2>&1
 ```
 Save and exit after making changes.Set the script here to execute the `cloudflare-ddns.sh` script every five minutes to achieve dynamic domain name resolution.
-
-### FAQ
-When the error log is:
-`API UPDATE FAILED. DUMPING RESULTS:`
-`{"success":false,"errors":[{"code":7001,"message":"Method PUT not available for that URI."}],"messages":[],"result":null}`
-Delete the `cloudflare.ids` file in the script running directory, and then try to run again.
