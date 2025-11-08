@@ -44,7 +44,7 @@ recordname2=""
 recordtype2="A"
 proxied2="false"
 ```
-以任意一個域名為例，ipv6.google.com 這個域名，zone_name為 `google.com` 和 record_name 則為 `ipv6.google.com` ，修改完成後，儲存並離開。
+以任意一個域名為例，www.google.com 這個域名，zonename1 為 `google.com` 和 recordname1 則為 `www` ，修改完成後，儲存並離開。
 
 在指令行中輸入以下內容執行指令碼：
 ```shell
