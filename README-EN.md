@@ -44,7 +44,7 @@ recordname2=""
 recordtype2="A"
 proxied2="false"
 ```
-Taking any domain as an example, for the domain www.google.com, zonename1 would be google.com and recordname1 would be www. After making the modifications, save and exit.
+Taking any domain as an example, for the domain `www.google.com`, `zonename1` would be `google.com` and `recordname1` would be `www`. If `recordname1` is empty, the root domain record `google.com` will be updated. After making the modifications, save and exit.
 
 Enter the following at the terminal to run the script:
 ```shell
@@ -54,7 +54,7 @@ If it says `IP changed to: xxxxx` or` IP has not changed.`, the configuration is
 
 #### Schedule script
 In order to achieve dynamic domain name resolution, the script must be kept running to obtain the IP status. Here the system crontab is used for timing.
-Enter the `crontab -e` at the terminal,Add the following at the end of the file:
+Enter the `sudo crontab -e` at the terminal,Add the following at the end of the file:
 ```shell
 */10 * * * *  /home/username/cloudflare-ddns.sh >/dev/null 2>&1
 ```
