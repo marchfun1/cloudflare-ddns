@@ -44,7 +44,7 @@ recordname2=""
 recordtype2="A"
 proxied2="false"
 ```
-以任意一個域名為例，www.google.com 這個域名，zonename1 為 `google.com` 和 recordname1 則為 `www` ，修改完成後，儲存並離開。
+以任意一個域名為例，www.google.com 這個域名，zonename1 為 `google.com` 和 recordname1 則為 `www` ，recordname1 為空的話則會更新根域名 `google.com` 記錄。修改完成後，儲存並離開。
 
 在指令行中輸入以下內容執行指令碼：
 ```shell
@@ -54,7 +54,7 @@ bash /home/username/cloudflare-ddns.sh
 
 **定時執行指令碼**
 為了實現動態域名解析，必須讓指令碼保持執行以取得IP狀態，這裡使用系統 crontab 定時
-在指令行輸入：`crontab -e` 後在檔案最後加入以下內容
+在指令行輸入：`sudo crontab -e` 後在檔案最後加入以下內容
 ```shell
 */10 * * * *  /home/username/cloudflare-ddns.sh >/dev/null 2>&1
 ```
