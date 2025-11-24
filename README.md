@@ -1,4 +1,4 @@
-# CloudFlare DDNS script/Raspberry pi IPV6 DDNS Solution 
+# CloudFlare DDNS script/Raspberry pi IPv4/IPv6 動態 DNS 更新方案
 
 #### cloudflare ddns 指令碼/樹莓派 IPv6/IPv4 DDNS
 
@@ -53,7 +53,7 @@ bash /home/username/cloudflare-ddns.sh
 如果提示 `IP 更新成功: xxxxx` 或 `IP 未變更: xxxxx` 則說明設定成功了
 
 **定時執行指令碼**
-為了實現動態域名解析，必須讓指令碼保持執行以取得IP狀態，這裡使用系統 crontab 定時
+為了實現動態域名解析，必須讓指令碼保持執行以取得 IP 狀態，這裡使用系統 crontab 定時
 在指令行輸入：`sudo crontab -e` 後在檔案最後加入以下內容
 ```shell
 */10 * * * *  /home/username/cloudflare-ddns.sh >/dev/null 2>&1
