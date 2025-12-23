@@ -11,8 +11,6 @@ set -euo pipefail
 # 授權: MIT License
 # 依賴: curl, jq (可使用 apt/yum/brew 安裝)
 # 使用方式: 設定腳本內的 apitoken、zonename、recordname 等變數後執行
-# 變更紀錄:
-#   v2.0 – 2025-11-25 – 加入 env shebang、set -euo pipefail、依賴檢查
 # --------------------------------------------------
 
 # 第一組網域設定  # First group domain settings
