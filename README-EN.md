@@ -76,6 +76,17 @@ It is recommended to check for IP changes every 10 minutes:
 
 ---
 
+### 🔄 How to Update
+
+To update to the latest version, run the following commands in the project directory:
+
+```bash
+git pull
+chmod +x cloudflare-ddns.sh
+```
+
+---
+
 ### ⚙️ Config Details (ddns.conf)
 
 | Parameter | Description | Example |
@@ -94,4 +105,4 @@ This project is open-sourced under the **GPL-3.0 License**. Contributions via Is
 
 ---
 **Author**: March Fun  
-**Website**: [www.suma.tw](https://www.suma.tw)
+**Website**: [suma.tw](https://suma.tw)

@@ -76,6 +76,17 @@ nano ddns.conf
 
 ---
 
+### 🔄 如何更新
+
+若要更新至最新版本，請在專案目錄執行：
+
+```bash
+git pull
+chmod +x cloudflare-ddns.sh
+```
+
+---
+
 ### ⚙️ 設定檔詳解 (ddns.conf)
 
 | 參數 | 說明 | 範例 |
@@ -94,4 +105,4 @@ nano ddns.conf
 
 ---
 **原作者**: March Fun  
-**官方網站**: [www.suma.tw](https://www.suma.tw)
+**官方網站**: [suma.tw](https://suma.tw)

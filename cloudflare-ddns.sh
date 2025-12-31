@@ -4,7 +4,7 @@ set -euo pipefail
 # Updated: 2025-12-31 12:45:00 (UTC+8)
 # Version: 3.0
 # Author: March Fun
-# URL: https://www.suma.tw
+# URL: https://suma.tw
 # --------------------------------------------------
 # 說明: 使用 Cloudflare API Token 的 DDNS 更新腳本，支援 IPv4 與 IPv6
 # 授權: GPL-3.0 License
