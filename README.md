@@ -27,7 +27,7 @@
 2. **域名**：已託管於 Cloudflare。
 3. **API Token**：
    - 登入 Cloudflare 帳戶。
-   - 前往 [My Profile > API Tokens](https://dash.cloudflare.com/profile/api-tokens)。
+   - 前往 [我的設定檔 > API 權杖](https://dash.cloudflare.com/profile/api-tokens)。
    - 建立一個具有 `Zone.DNS` 編輯權限的權杖 (Token)。
 4. **DNS 記錄**：請先手動在 Cloudflare 面板建立好對應的 A 或 AAAA 記錄。
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # --------------------------------------------------
-# Updated: 2024-12-31 12:20:00 (UTC+8)
+# Updated: 2025-12-31 12:45:00 (UTC+8)
 # Version: 3.0
 # Author: March Fun
 # URL: https://www.suma.tw
