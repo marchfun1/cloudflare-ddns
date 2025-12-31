@@ -45,9 +45,10 @@ chmod +x cloudflare-ddns.sh
 
 #### 2. 配置参数
 
-编辑 `ddns.conf` 填入您的令牌与域名信息：
+复制示例配置文件并填入您的令牌与域名信息：
 
 ```bash
+cp ddns.conf.example ddns.conf
 nano ddns.conf
 ```
 

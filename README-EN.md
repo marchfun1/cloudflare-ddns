@@ -45,9 +45,10 @@ chmod +x cloudflare-ddns.sh
 
 #### 2. Configure Parameters
 
-Edit `ddns.conf` and fill in your token and domain info:
+Copy the example configuration file and fill in your token and domain info:
 
 ```bash
+cp ddns.conf.example ddns.conf
 nano ddns.conf
 ```
 
