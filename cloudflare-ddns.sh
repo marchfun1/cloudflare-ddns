@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # --------------------------------------------------
-# Updated: 2025-12-31 12:45:00 (UTC+8)
-# Version: 3.0
+# Updated: 2026-1-24 17:00:00 (UTC+8)
+# Version: 3.0.1
 # Author: March Fun
 # URL: https://suma.tw
 # --------------------------------------------------
@@ -25,6 +25,10 @@ else
 fi
 
 # 預設值與檔案路徑
+# 確保日誌路徑為絕對路徑 (處理相對路徑設定)
+if [[ -n "${logfile:-}" && "$logfile" != /* && "$logfile" != *:* ]]; then
+    logfile="${SCRIPT_DIR}/${logfile}"
+fi
 logfile="${logfile:-${SCRIPT_DIR}/cloudflare-ddns.log}"
 max_log_size="${max_log_size:-1048576}" # 預設 1MB
 
@@ -44,7 +48,13 @@ check_dependencies() {
 
 log() {
     local message="$@"
-    echo -e "$(date '+%F %T') $message" >> "$logfile"
+    local timestamp=$(date '+%F %T')
+    # 輸出到 Log 檔案
+    echo -e "$timestamp $message" >> "$logfile"
+    # 如果是在終端機執行，也同時輸出到 stderr 以便觀察
+    if [ -t 2 ]; then
+        echo -e "$timestamp $message" >&2
+    fi
     
     # 日誌滾動檢查
     if [[ -f "$logfile" ]]; then
@@ -99,7 +109,7 @@ update_dns() {
       -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" | jq -r '.result[0].id // empty')
     
     if [[ -z "$zoneid" || "$zoneid" == "null" ]]; then 
-        log "[$zonename] 取得 ZoneID 失敗，請檢查域名和 API Token"
+        log "[$zonename] 錯誤: 取得 ZoneID 失敗，請檢查域名和 API Token"
         return 1
     fi
 
@@ -111,7 +121,7 @@ update_dns() {
       -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" | jq -r '.result[0].id // empty')
     
     if [[ -z "$recid" || "$recid" == "null" ]]; then 
-        log "[$zonename] 取得紀錄 ID 失敗，請確認 ${rec_name} (${recordtype}) 已存在於 CF 中"
+        log "[$zonename] 錯誤: 取得紀錄 ID 失敗，請確認 ${rec_name} (${recordtype}) 已存在於 CF 中"
         return 1
     fi
 
@@ -125,7 +135,7 @@ update_dns() {
         log "[$rec_name] IP 成功更新為: $ip"
     else
         local errors=$(echo "$resp" | jq -r '.errors[]?.message' 2>/dev/null)
-        log "[$rec_name] IP 更新失敗: ${errors:-未知錯誤}"
+        log "[$rec_name] 錯誤: IP 更新失敗: ${errors:-未知錯誤}"
         return 1
     fi
 }
@@ -136,22 +146,34 @@ process_group() {
 
     local current_ip=$(fetch_ip "$type")
     if [[ -z "$current_ip" ]]; then
-        log "[$zone] 取得 $type IP 失敗，跳過此組"
+        log "[$zone] 錯誤: 取得 $type IP 失敗，跳過此組"
         return 1
     fi
 
-    local ip_cache_file="${SCRIPT_DIR}/.ip_${type}_${zone}_${record:-root}.txt"
+    local ip_cache_file="${SCRIPT_DIR}/ip_${type}_${zone}_${record:-root}.txt"
+    
+    # 檢查目錄寫入權限 (僅在首次需要建立檔案時檢查，避免重複)
+    if [[ ! -f "$ip_cache_file" && ! -w "$SCRIPT_DIR" ]]; then
+        log "[$zone] 嚴重錯誤: 無法寫入目錄 $SCRIPT_DIR，無法建立快取檔"
+        return 1
+    fi
+
     local old_ip=""
     [[ -f "$ip_cache_file" ]] && old_ip=$(cat "$ip_cache_file")
 
     if [[ "$current_ip" == "$old_ip" ]]; then
-        # 為了保持日誌整潔，IP 未變更時可選擇是否記錄
-        # log "[$zone] IP 未變更 ($current_ip)"
+        # IP 未變更，安靜離開
         return 0
     fi
 
+    # 嘗試更新
     if update_dns "$token" "$zone" "$record" "$type" "$current_ip" "$proxied"; then
-        echo "$current_ip" > "$ip_cache_file"
+        # 只有在更新成功後，才寫入快取
+        if echo "$current_ip" > "$ip_cache_file"; then
+            log "[$zone] 快取檔已更新: $ip_cache_file"
+        else
+             log "[$zone] 警告: API 更新成功，但寫入快取檔失敗 (權限不足?)"
+        fi
     fi
 }
 

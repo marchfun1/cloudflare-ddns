@@ -1,4 +1,4 @@
-# Cloudflare DDNS Script (V3.0)
+# Cloudflare DDNS Script (V3.0.1)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Bash](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/marchfun1/cloudflare-ddns)
@@ -72,7 +72,7 @@ It is recommended to check for IP changes every 10 minutes:
 2. Add the following line at the end (adjust the path to your actual location):
 
 ```bash
-*/10 * * * * /path/to/cloudflare-ddns/cloudflare-ddns.sh >/dev/null 2>&1
+*/10 * * * * /path/to/cloudflare-ddns/cloudflare-ddns.sh
 ```
 
 ---

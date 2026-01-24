@@ -1,4 +1,4 @@
-# Cloudflare DDNS 腳本 (V3.0)
+# Cloudflare DDNS 腳本 (V3.0.1)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Bash](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/marchfun1/cloudflare-ddns)
@@ -72,7 +72,7 @@ nano ddns.conf
 2. 在檔案末尾加入以下內容（請修正為您的實際路徑）：
 
 ```bash
-*/10 * * * * /path/to/cloudflare-ddns/cloudflare-ddns.sh >/dev/null 2>&1
+*/10 * * * * /path/to/cloudflare-ddns/cloudflare-ddns.sh
 ```
 
 ---
