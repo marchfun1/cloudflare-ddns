@@ -1,4 +1,4 @@
-# Cloudflare DDNS 脚本 (V3.0.1)
+# Cloudflare DDNS 脚本 (V3.0.2)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Bash](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/marchfun1/cloudflare-ddns)
@@ -79,12 +79,15 @@ nano ddns.conf
 
 ### 🔄 如何更新
 
-若要更新至最新版本，請在專案目錄執行：
+若要更新至最新版本，请在项目目录执行：
 
 ```bash
 git pull
 chmod +x cloudflare-ddns.sh
 ```
+
+**手动更新：**  
+若您不是通过 `git clone` 安装，可以直接从 GitHub 下载最新的 `cloudflare-ddns.sh` 覆盖旧档。请注意，更新后必须再次检查文件权限，确保脚本具备可执行权限：`chmod +x cloudflare-ddns.sh`。
 
 ---
 

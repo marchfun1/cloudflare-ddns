@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # --------------------------------------------------
-# Updated: 2026-1-24 17:00:00 (UTC+8)
-# Version: 3.0.1
+# Updated: 2026-04-06 19:00:00 (UTC+8)
+# Version: 3.0.2
 # Author: March Fun
 # URL: https://suma.tw
 # --------------------------------------------------
@@ -17,6 +17,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 載入設定檔
 CONFIG_FILE="${SCRIPT_DIR}/ddns.conf"
 if [[ -f "$CONFIG_FILE" ]]; then
+    # 檢查設定檔權限，若其他使用者有讀寫權限則發出警告 (避免 API Token 洩漏)
+    if command -v stat &>/dev/null; then
+        perms=$(stat -c "%a" "$CONFIG_FILE" 2>/dev/null || true)
+        if [[ -n "$perms" && "${perms: -1}" != "0" ]]; then
+            echo "警告: 設定檔 $CONFIG_FILE 權限過於開放 (權限 $perms)，可能導致 API Token 洩漏。建議執行: chmod 600 $CONFIG_FILE" >&2
+        fi
+    fi
     # shellcheck source=/dev/null
     source "$CONFIG_FILE"
 else
@@ -49,11 +56,11 @@ check_dependencies() {
 log() {
     local message="$@"
     local timestamp=$(date '+%F %T')
-    # 輸出到 Log 檔案
-    echo -e "$timestamp $message" >> "$logfile"
+    # 輸出到 Log 檔案，使用 printf 避免 echo -e 造成跳脫字元被解析的風險
+    printf "%s %s\n" "$timestamp" "$message" >> "$logfile"
     # 如果是在終端機執行，也同時輸出到 stderr 以便觀察
     if [ -t 2 ]; then
-        echo -e "$timestamp $message" >&2
+        printf "%s %s\n" "$timestamp" "$message" >&2
     fi
     
     # 日誌滾動檢查
@@ -125,8 +132,18 @@ update_dns() {
         return 1
     fi
 
-    # 更新 DNS 記錄
-    local update_json="{\"type\":\"${recordtype}\",\"name\":\"${rec_name}\",\"content\":\"${ip}\",\"ttl\":1,\"proxied\":${proxied}}"
+    # 安全地組合 JSON 資料，防止 JSON 注入攻擊
+    local proxied_bool="false"
+    [[ "$proxied" == "true" ]] && proxied_bool="true"
+    
+    local update_json
+    update_json=$(jq -n \
+        --arg type "$recordtype" \
+        --arg name "$rec_name" \
+        --arg content "$ip" \
+        --argjson proxied "$proxied_bool" \
+        '{type: $type, name: $name, content: $content, ttl: 1, proxied: $proxied}')
+
     local resp=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records/${recid}" \
       -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" --data "$update_json")
     
@@ -150,7 +167,10 @@ process_group() {
         return 1
     fi
 
-    local ip_cache_file="${SCRIPT_DIR}/ip_${type}_${zone}_${record:-root}.txt"
+    # 清理變數中的特殊字元，避免路徑穿越 (Path Traversal) 漏洞
+    local safe_zone="${zone//[^a-zA-Z0-9.-]/_}"
+    local safe_record="${record//[^a-zA-Z0-9.-]/_}"
+    local ip_cache_file="${SCRIPT_DIR}/ip_${type}_${safe_zone}_${safe_record:-root}.txt"
     
     # 檢查目錄寫入權限 (僅在首次需要建立檔案時檢查，避免重複)
     if [[ ! -f "$ip_cache_file" && ! -w "$SCRIPT_DIR" ]]; then

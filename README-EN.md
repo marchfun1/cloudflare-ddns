@@ -1,4 +1,4 @@
-# Cloudflare DDNS Script (V3.0.1)
+# Cloudflare DDNS Script (V3.0.2)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Bash](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/marchfun1/cloudflare-ddns)
@@ -85,6 +85,9 @@ To update to the latest version, run the following commands in the project direc
 git pull
 chmod +x cloudflare-ddns.sh
 ```
+
+**Manual Update:**  
+If you didn't install via `git clone`, you can manually download the latest `cloudflare-ddns.sh` and overwrite the old one. Remember to re-grant execution permissions: `chmod +x cloudflare-ddns.sh`.
 
 ---
 

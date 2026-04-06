@@ -1,4 +1,4 @@
-# Cloudflare DDNS 腳本 (V3.0.1)
+# Cloudflare DDNS 腳本 (V3.0.2)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Bash](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/marchfun1/cloudflare-ddns)
@@ -85,6 +85,9 @@ nano ddns.conf
 git pull
 chmod +x cloudflare-ddns.sh
 ```
+
+**手動更新：**  
+若您不是透過 `git clone` 安裝，可以直接從 GitHub 下載最新的 `cloudflare-ddns.sh` 覆蓋舊檔。請注意，更新後必須再次檢查檔案權限，確保腳本具備可執行權限：`chmod +x cloudflare-ddns.sh`。
 
 ---
 
