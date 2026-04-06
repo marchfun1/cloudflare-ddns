@@ -1,5 +1,0 @@
-# Cloudflare DDNS Git Ignore
-ddns.conf
-ip.txt
-.ip_*.txt
-*.log
