@@ -3,7 +3,7 @@ set -euo pipefail
 # --------------------------------------------------
 # Updated: 2026-04-06 19:00:00 (UTC+8)
 # Version: 3.0.2
-# Author: March Fun
+# Author: 域創數位工作室 (LOCALSOFT Digital Studio)
 # URL: https://suma.tw
 # --------------------------------------------------
 # 說明: 使用 Cloudflare API Token 的 DDNS 更新腳本，支援 IPv4 與 IPv6

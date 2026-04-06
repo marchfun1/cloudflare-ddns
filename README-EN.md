@@ -108,5 +108,5 @@ If you didn't install via `git clone`, you can manually download the latest `clo
 This project is open-sourced under the **GPL-3.0 License**. Contributions via Issues or Pull Requests are welcome.
 
 ---
-**Author**: March Fun  
+**Author**: LOCALSOFT Digital Studio  
 **Website**: [suma.tw](https://suma.tw)

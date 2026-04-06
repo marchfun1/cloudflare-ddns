@@ -108,5 +108,5 @@ chmod +x cloudflare-ddns.sh
 本项目基于 **GPL-3.0 License** 开源。欢迎提交 Issue 或 Pull Request 协助改进。
 
 ---
-**原作者**: March Fun  
+**原作者**: 域创数字工作室 (LOCALSOFT Digital Studio)  
 **官方网站**: [suma.tw](https://suma.tw)
