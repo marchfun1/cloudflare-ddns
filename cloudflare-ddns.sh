@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # --------------------------------------------------
-# Updated: 2026-04-06 19:00:00 (UTC+8)
-# Version: 3.0.2
+# Updated: 2026-06-11 23:20:00 (UTC+8)
+# Version: 3.0.3
 # Author: 域創數位工作室 (LOCALSOFT Digital Studio)
 # URL: https://suma.tw
 # --------------------------------------------------
@@ -67,8 +67,11 @@ log() {
     if [[ -f "$logfile" ]]; then
         local current_size=$(stat -c%s "$logfile" 2>/dev/null || stat -f%z "$logfile" 2>/dev/null || echo 0)
         if (( current_size > max_log_size )); then
-            tail -n 100 "$logfile" > "${logfile}.tmp" && mv "${logfile}.tmp" "$logfile"
-            log "[System] 日誌超過限制，已清理舊紀錄"
+            if tail -n 100 "$logfile" > "${logfile}.tmp" 2>/dev/null && mv "${logfile}.tmp" "$logfile" 2>/dev/null; then
+                log "[System] 日誌超過限制，已清理舊紀錄"
+            else
+                rm -f "${logfile}.tmp" 2>/dev/null || true
+            fi
         fi
     fi
 }
@@ -111,21 +114,33 @@ update_dns() {
     local ip="$5"
     local proxied="$6"
 
-    # 取得 Zone ID
-    local zoneid=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${zonename}" \
-      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" | jq -r '.result[0].id // empty')
+    # 驗證域名與記錄名稱格式安全 (僅允許英數、點、減號)，防止非預期字元破壞 URL 結構
+    if [[ ! "$zonename" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+        log "錯誤: 域名 '$zonename' 格式不正確，僅允許英數字、點與減號"
+        return 1
+    fi
+    if [[ -n "$recordname" && ! "$recordname" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+        log "錯誤: 記錄名稱 '$recordname' 格式不正確，僅允許英數字、點與減號"
+        return 1
+    fi
+
+    # 取得 Zone ID (安全地使用 || echo "" 確保網路或 API 異常時不致令 set -e 中斷腳本)
+    local zoneid
+    zoneid=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=${zonename}" \
+      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" 2>/dev/null | jq -r '.result[0].id // empty' 2>/dev/null || echo "")
     
     if [[ -z "$zoneid" || "$zoneid" == "null" ]]; then 
-        log "[$zonename] 錯誤: 取得 ZoneID 失敗，請檢查域名和 API Token"
+        log "[$zonename] 錯誤: 取得 ZoneID 失敗，請檢查網路連接、域名和 API Token"
         return 1
     fi
 
     # 組合完整記錄名稱
     local rec_name=$([[ -z "$recordname" ]] && echo "$zonename" || echo "${recordname}.${zonename}")
 
-    # 取得 Record ID
-    local recid=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records?type=${recordtype}&name=${rec_name}" \
-      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" | jq -r '.result[0].id // empty')
+    # 取得 Record ID (安全地使用 || echo "" 確保網路或 API 異常時不致令 set -e 中斷腳本)
+    local recid
+    recid=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records?type=${recordtype}&name=${rec_name}" \
+      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" 2>/dev/null | jq -r '.result[0].id // empty' 2>/dev/null || echo "")
     
     if [[ -z "$recid" || "$recid" == "null" ]]; then 
         log "[$zonename] 錯誤: 取得紀錄 ID 失敗，請確認 ${rec_name} (${recordtype}) 已存在於 CF 中"
@@ -144,15 +159,19 @@ update_dns() {
         --argjson proxied "$proxied_bool" \
         '{type: $type, name: $name, content: $content, ttl: 1, proxied: $proxied}')
 
-    local resp=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records/${recid}" \
-      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" --data "$update_json")
+    # 安全地使用 || echo "" 確保網路或 API 異常時不致令 set -e 中斷腳本
+    local resp
+    resp=$(curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/${zoneid}/dns_records/${recid}" \
+      -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" --data "$update_json" 2>/dev/null || echo "")
     
-    local success=$(echo "$resp" | jq -r '.success // false')
+    local success
+    success=$(echo "$resp" | jq -r '.success // false' 2>/dev/null || echo "false")
     if [[ "$success" == "true" ]]; then
         log "[$rec_name] IP 成功更新為: $ip"
     else
-        local errors=$(echo "$resp" | jq -r '.errors[]?.message' 2>/dev/null)
-        log "[$rec_name] 錯誤: IP 更新失敗: ${errors:-未知錯誤}"
+        local errors
+        errors=$(echo "$resp" | jq -r '.errors[]?.message' 2>/dev/null || echo "")
+        log "[$rec_name] 錯誤: IP 更新失敗: ${errors:-未知錯誤/網路連線失敗}"
         return 1
     fi
 }

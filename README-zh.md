@@ -1,4 +1,4 @@
-# Cloudflare DDNS 脚本 (V3.0.2)
+# Cloudflare DDNS 脚本 (V3.0.3)
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Bash](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/marchfun1/cloudflare-ddns)
