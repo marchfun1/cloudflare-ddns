@@ -21,13 +21,13 @@ if [[ -f "$CONFIG_FILE" ]]; then
     if command -v stat &>/dev/null; then
         perms=$(stat -c "%a" "$CONFIG_FILE" 2>/dev/null || true)
         if [[ -n "$perms" && "${perms: -1}" != "0" ]]; then
-            echo "警告: 設定檔 $CONFIG_FILE 權限過於開放 (權限 $perms)，可能導致 API Token 洩漏。建議執行: chmod 600 $CONFIG_FILE" >&2
+            echo "Warning: Config file $CONFIG_FILE permissions are too open (permissions $perms), which may leak the API Token. Recommended action: chmod 600 $CONFIG_FILE" >&2
         fi
     fi
     # shellcheck source=/dev/null
     source "$CONFIG_FILE"
 else
-    echo "錯誤: 找不到設定檔 $CONFIG_FILE"
+    echo "Error: Configuration file $CONFIG_FILE not found"
     exit 1
 fi
 
@@ -48,7 +48,7 @@ check_dependencies() {
         fi
     done
     if [ ${#missing_deps[@]} -ne 0 ]; then
-        echo "錯誤: 缺少必要的依賴程式: ${missing_deps[*]}"
+        echo "Error: Missing required dependencies: ${missing_deps[*]}"
         exit 1
     fi
 }
@@ -68,7 +68,7 @@ log() {
         local current_size=$(stat -c%s "$logfile" 2>/dev/null || stat -f%z "$logfile" 2>/dev/null || echo 0)
         if (( current_size > max_log_size )); then
             if tail -n 100 "$logfile" > "${logfile}.tmp" 2>/dev/null && mv "${logfile}.tmp" "$logfile" 2>/dev/null; then
-                log "[System] 日誌超過限制，已清理舊紀錄"
+                log "[System] Log size exceeded limit, cleared old entries"
             else
                 rm -f "${logfile}.tmp" 2>/dev/null || true
             fi
@@ -116,11 +116,11 @@ update_dns() {
 
     # 驗證域名與記錄名稱格式安全 (僅允許英數、點、減號)，防止非預期字元破壞 URL 結構
     if [[ ! "$zonename" =~ ^[a-zA-Z0-9.-]+$ ]]; then
-        log "錯誤: 域名 '$zonename' 格式不正確，僅允許英數字、點與減號"
+        log "Error: Domain '$zonename' format is incorrect, only alphanumeric characters, dots, and hyphens are allowed"
         return 1
     fi
     if [[ -n "$recordname" && ! "$recordname" =~ ^[a-zA-Z0-9.-]+$ ]]; then
-        log "錯誤: 記錄名稱 '$recordname' 格式不正確，僅允許英數字、點與減號"
+        log "Error: Record name '$recordname' format is incorrect, only alphanumeric characters, dots, and hyphens are allowed"
         return 1
     fi
 
@@ -130,7 +130,7 @@ update_dns() {
       -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" 2>/dev/null | jq -r '.result[0].id // empty' 2>/dev/null || echo "")
     
     if [[ -z "$zoneid" || "$zoneid" == "null" ]]; then 
-        log "[$zonename] 錯誤: 取得 ZoneID 失敗，請檢查網路連接、域名和 API Token"
+        log "[$zonename] Error: Failed to retrieve ZoneID. Please check network connection, domain, and API Token"
         return 1
     fi
 
@@ -143,7 +143,7 @@ update_dns() {
       -H "Authorization: Bearer ${apitoken}" -H "Content-Type: application/json" 2>/dev/null | jq -r '.result[0].id // empty' 2>/dev/null || echo "")
     
     if [[ -z "$recid" || "$recid" == "null" ]]; then 
-        log "[$zonename] 錯誤: 取得紀錄 ID 失敗，請確認 ${rec_name} (${recordtype}) 已存在於 CF 中"
+        log "[$zonename] Error: Failed to retrieve record ID. Please make sure ${rec_name} (${recordtype}) exists in Cloudflare"
         return 1
     fi
 
@@ -167,11 +167,11 @@ update_dns() {
     local success
     success=$(echo "$resp" | jq -r '.success // false' 2>/dev/null || echo "false")
     if [[ "$success" == "true" ]]; then
-        log "[$rec_name] IP 成功更新為: $ip"
+        log "[$rec_name] IP successfully updated to: $ip"
     else
         local errors
         errors=$(echo "$resp" | jq -r '.errors[]?.message' 2>/dev/null || echo "")
-        log "[$rec_name] 錯誤: IP 更新失敗: ${errors:-未知錯誤/網路連線失敗}"
+        log "[$rec_name] Error: IP update failed: ${errors:-Unknown error/Network connection failed}"
         return 1
     fi
 }
@@ -182,7 +182,7 @@ process_group() {
 
     local current_ip=$(fetch_ip "$type")
     if [[ -z "$current_ip" ]]; then
-        log "[$zone] 錯誤: 取得 $type IP 失敗，跳過此組"
+        log "[$zone] Error: Failed to retrieve $type IP, skipping this group"
         return 1
     fi
 
@@ -193,7 +193,7 @@ process_group() {
     
     # 檢查目錄寫入權限 (僅在首次需要建立檔案時檢查，避免重複)
     if [[ ! -f "$ip_cache_file" && ! -w "$SCRIPT_DIR" ]]; then
-        log "[$zone] 嚴重錯誤: 無法寫入目錄 $SCRIPT_DIR，無法建立快取檔"
+        log "[$zone] Critical Error: Unable to write to directory $SCRIPT_DIR, cannot create cache file"
         return 1
     fi
 
@@ -209,9 +209,9 @@ process_group() {
     if update_dns "$token" "$zone" "$record" "$type" "$current_ip" "$proxied"; then
         # 只有在更新成功後，才寫入快取
         if echo "$current_ip" > "$ip_cache_file"; then
-            log "[$zone] 快取檔已更新: $ip_cache_file"
+            log "[$zone] Cache file updated: $ip_cache_file"
         else
-             log "[$zone] 警告: API 更新成功，但寫入快取檔失敗 (權限不足?)"
+             log "[$zone] Warning: API update successful, but failed to write to cache file (insufficient permissions?)"
         fi
     fi
 }
